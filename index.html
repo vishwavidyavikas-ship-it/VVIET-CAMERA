@@ -1,0 +1,117 @@
+<!DOCTYPE html><html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VVIET Student Camera</title>  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 15px;
+      background: #f2f5f9;
+    }
+
+    h2 {
+      color: #17365d;
+    }
+
+    video, canvas {
+      width: 100%;
+      max-width: 480px;
+      border-radius: 10px;
+      border: 2px solid #333;
+    }
+
+    button {
+      padding: 14px 22px;
+      margin: 10px;
+      font-size: 17px;
+      border: none;
+      border-radius: 8px;
+      background: #17365d;
+      color: white;
+    }
+
+    #message {
+      font-weight: bold;
+      margin-top: 15px;
+    }
+  </style></head><body>  <h2>VVIET Student Photo</h2><video id="video" autoplay playsinline></video>
+
+  <br><button onclick="startCamera()">START CAMERA</button>
+
+<button onclick="capturePhoto()">CAPTURE PHOTO</button>
+
+  <br><canvas id="canvas" width="640" height="480"
+style="display:none"></canvas>
+
+  <p id="message">Click START CAMERA to begin.</p>  <script>
+    let stream;
+
+    async function startCamera() {
+      try {
+        if (!navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia) {
+          throw new Error("Camera is not supported.");
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user",
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        });
+
+        const video = document.getElementById("video");
+        video.srcObject = stream;
+
+        await video.play();
+
+        document.getElementById("message").innerText =
+          "Camera started successfully!";
+      } catch (error) {
+        document.getElementById("message").innerText =
+          "Camera Error: " + error.name + " - " + error.message;
+      }
+    }
+
+    function capturePhoto() {
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+
+      if (!video.videoWidth) {
+        alert("Please start the camera first.");
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+
+      ctx.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      const photo = canvas.toDataURL("image/jpeg", 0.8);
+
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({
+          type: "VVIET_PHOTO",
+          photo: photo
+        }, "*");
+
+        document.getElementById("message").innerText =
+          "Photo sent to the screening form!";
+      } else {
+        document.getElementById("message").innerText =
+          "Camera test successful. Open this page from your screening form to transfer the photo.";
+      }
+    }
+  </script></body>
+</html>
